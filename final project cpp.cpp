@@ -6,7 +6,7 @@
 #include <optional>
 #include <stack>
 #include <map>
-
+#include <limits>
 
 //Выделение константы  под определение бесконечности
 const int INF = std::numeric_limits<int>::max;
