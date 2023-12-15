@@ -26,7 +26,7 @@ struct Node
 	std::vector<Edge> edges;
 
 	int prevIndex;
-	int weihgt;
+	int weight;
 	bool visited;
 
 };
@@ -55,7 +55,7 @@ struct Graph
 	{
 		for (auto& node : nodes)
 		{
-			node.weihgt = INF;
+			node.weight = INF;
 			node.visited = false;
 			node.prevIndex = INF;
 		}
@@ -84,7 +84,7 @@ bool read_edges(std::istream& istream, std::size_t edges_count, Graph& graph_out
 
 	for (std::size_t i = 0; i < edges_count; i++)
 	{
-		int start_id, end_id;
+		long long start_id, end_id;
 		int weight;
 
 		istream >> start_id >> end_id;
@@ -98,11 +98,11 @@ bool read_edges(std::istream& istream, std::size_t edges_count, Graph& graph_out
 		if (start_iter == nodes_ref.end() || end_iter == nodes_ref.end())
 		{
 			graph_out.clear_edges();
-
 			return false;
 		}
-		std::size_t index = (end_iter - nodes_ref.begin());
-		(*start_iter).edges.push_back(Edge{ weight, index });
+
+		std::size_t index = static_cast<std::size_t>(end_iter - nodes_ref.begin());
+		(*start_iter).edges.push_back(Edge{ weight, static_cast<int>(index) });
 	}
 
 	return true;
@@ -127,3 +127,73 @@ Graph read_graph(const std::string& file_path)
 	return graph;
 }
 
+std::vector<std::size_t> convert_graph_to_path(Graph& graph, std::size_t start_index, std::size_t end_index)
+{
+	std::vector<std::size_t> result;
+	std::stack<std::size_t> tmp_path;
+	std::size_t current_node = end_index;
+	while (current_node != INF)
+	{
+		tmp_path.push(current_node);
+		current_node = graph.nodes[current_node].prevIndex;
+	}
+	while (!tmp_path.empty())
+	{
+		result.push_back(tmp_path.top());
+		tmp_path.pop();
+	}
+	return result;
+}
+
+std::vector<std::size_t> find_path_Dijkstra(Graph& graph, std::size_t start_index, std::size_t end_index)
+{
+	graph.init_start_parametrs();
+	std::multimap<int, std::size_t> min_weigth_map;
+	graph.nodes[start_index].weight = 0;
+	min_weigth_map.insert({ 0, start_index });
+	while (!min_weigth_map.empty())
+	{
+		auto current= *(min_weigth_map.begin());
+		int current_weight = current.first;
+		int current_index = current.second;
+
+		min_weigth_map.erase(min_weigth_map.begin());
+		if (graph.nodes[current_index].visited)
+		{
+			continue;
+		}
+
+		graph.nodes[current_index].visited = true;
+
+		for (std::size_t i = 0; i < graph.nodes[current_index].edges.size(); i++)
+		{
+			std::size_t index_to = graph.nodes[current_index].edges[i].indexTo;
+			int edged_weight = graph.nodes[current_index].edges[i].weight;
+			if (!graph.nodes[index_to].visited)
+			{
+				if (current_weight + edged_weight < graph.nodes[index_to].weight)
+				{
+					graph.nodes[index_to].weight = current_weight + edged_weight;
+					graph.nodes[index_to].prevIndex = current_index;
+					min_weigth_map.insert({ graph.nodes[index_to].weight, index_to });
+				}
+			}
+		}
+
+	}
+
+	return convert_graph_to_path(graph, start_index, end_index);
+}
+
+int main()
+{
+	auto graph = read_graph("input.txt");
+	auto path = find_path_Dijkstra(graph, 0, 4);
+
+	for (auto path_node_index : path)
+	{
+		std::cout << graph.nodes[path_node_index].id << " ";
+	}
+
+	std::cout << std::endl;
+}
